@@ -1,0 +1,24 @@
+{
+  "name": "burgertic",
+  "version": "1.0.0",
+  "description": "burgertic",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/janoportnoi/burgertic.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/janoportnoi/burgertic/issues"
+  },
+  "homepage": "https://github.com/janoportnoi/burgertic#readme",
+  "dependencies": {
+    "express": "^4.18.2",
+    "mysql2": "^3.6.2"
+  }
+}
