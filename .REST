@@ -20,11 +20,11 @@ Content-Type: application/json
 {
     "productos": [
         {
-            "id": 18,
+            "id": 7,
             "cantidad": 5
         },
         {
-            "id": 4,
+            "id": 24,
             "cantidad": 2
         }
     ]

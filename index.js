@@ -20,7 +20,7 @@ connection.connect((err) => {
     console.log("Base de datos conectada");
 });
 //Crear un endpoint GET /menu que devuelva el menú completo del restaurante.
-app.get('/menu', (req, res) => {
+app.get('/menu', (_, res) => {
     connection.query('SELECT * FROM platos', (err, rows) => {
         if (err) {
             console.error("Error consultando: " + err);
@@ -29,9 +29,6 @@ app.get('/menu', (req, res) => {
         res.status(200).json(rows);
     });
 });
-
-
-
 
 //Crear un endpoint GET /menu/:id que devuelva el plato con el id indicado.
 app.get('/menu/:id', (req, res) => {
@@ -47,7 +44,7 @@ app.get('/menu/:id', (req, res) => {
 });
 
 //Crear un endpoint GET /combos que devuelva únicamente los combos del menú.
-app.get('/combos', (req, res) => {
+app.get('/combos', (_, res) => {
     connection.query('SELECT * FROM platos WHERE tipo = ?', ['combo'], (err, rows) => {
         if (err) {
             return res.status(500).json(err);
@@ -58,7 +55,7 @@ app.get('/combos', (req, res) => {
 });
 
 //Crear un endpoint GET /principales que devuelva únicamente los platos principales del menú.
-app.get('/principales', (req, res) => {
+app.get('/principales', (_, res) => {
     connection.query('SELECT * FROM platos where tipo = ?',['principal'],(err,rows)=>{
         if(err){
             return res.status(500).json(err);
@@ -69,7 +66,7 @@ app.get('/principales', (req, res) => {
 });
 
 //Crear un endpoint GET /postres que devuelva únicamente los postres del menú.
-app.get('/postres', (req, res) => {
+app.get('/postres', (_, res) => {
     connection.query('SELECT * FROM platos where tipo = ?',['postre'],(err,rows)=>{
         if(err){
             return res.status(500).json(err);
@@ -80,7 +77,7 @@ app.get('/postres', (req, res) => {
 
 //Crear un endpoint POST /pedido que reciba un array de id's de platos y devuelva el precio total del pedido. El array de platos debe ser pasado en el cuerpo de la petición. 
 
-    app.post('/pedido', (req, res) => {
+app.post('/pedido', (req, res) => {
         const { productos } = req.body;
       
         if (!Array.isArray(productos) || productos.length === 0) {
@@ -94,30 +91,21 @@ app.get('/postres', (req, res) => {
               msg: 'Error al consultar los platos en la base de datos',
             });
           }
+
       
           const menu = rows.map((row) => ({
             id: row.id,
             precio: row.precio,
           }));
-      
-          let precioTotal = 0;
-          let idsNoExistentes = [];
-      
-          productos.forEach((producto) => {
-            let menuItem = menu.find((item) => item.id === producto.id);
-      
-            if (menuItem) {
-              precioTotal += menuItem.precio * producto.cantidad;
-            } else {
-              idsNoExistentes.push(producto.id);
+
+          for (let i = 0; i < productos.length; i++) {
+            // Verifica si el id del plato existe
+            const plato = menu.find((p) => p.id === productos[i].id);
+            if (!plato) {
+              return res.status(400).json('El id del plato no es válido');
             }
-          });
-      
-          if (idsNoExistentes.length > 0) {
-            return res.status(400).json({
-              msg: 'Los siguientes IDs no existen en el menú: ' + idsNoExistentes.join(', '),
-            });
           }
+      
       
           connection.query(
             'INSERT INTO pedidos (id_usuario, fecha) VALUES (?, ?)',
@@ -131,7 +119,6 @@ app.get('/postres', (req, res) => {
               }
       
               const pedidoID = response.insertId;
-      
               for (let i = 0; i < productos.length; i++) {
                 connection.query(
                   'INSERT INTO pedidos_platos (id_pedido, id_plato, cantidad) VALUES (?, ?, ?)',
