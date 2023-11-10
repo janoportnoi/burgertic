@@ -4,6 +4,9 @@ const mysql = require('mysql2');
 const app = express();
 app.use(express.json());
 const PORT = 9000;
+const bycrypt = require('bcrypt');  
+
+
 const connection = mysql.createConnection({
     host: "localhost",
     user: "root",
@@ -78,38 +81,35 @@ app.get('/postres', (_, res) => {
 //Crear un endpoint POST /pedido que reciba un array de id's de platos y devuelva el precio total del pedido. El array de platos debe ser pasado en el cuerpo de la petición. 
 
 app.post('/pedido', (req, res) => {
-        const { productos } = req.body;
+  const { productos } = req.body;
       
-        if (!Array.isArray(productos) || productos.length === 0) {
-          return res.status(400).json('La solicitud debe incluir un array de platos o al menos un plato');
-        }
-      
-        connection.query('SELECT * FROM platos', (err, rows) => {
-          if (err) {
-            console.error('Error consultando: ' + err);
-            return res.status(500).json({
-              msg: 'Error al consultar los platos en la base de datos',
-            });
-          }
+  if (!Array.isArray(productos) || productos.length === 0) {
+     return res.status(400).json('La solicitud debe incluir un array de platos o al menos un plato');
+    }
+    connection.query('SELECT * FROM platos', (err, rows) => {
+      if (err) {
+        console.error('Error consultando: ' + err);
+        return res.status(500).json({
+          msg: 'Error al consultar los platos en la base de datos',
+        });
+      }
 
-      
-          const menu = rows.map((row) => ({
-            id: row.id,
-            precio: row.precio,
-          }));
+    const menu = rows.map((row) => ({
+    id: row.id,
+            
+}));
 
-          for (let i = 0; i < productos.length; i++) {
-            // Verifica si el id del plato existe
-            const plato = menu.find((p) => p.id === productos[i].id);
-            if (!plato) {
+      for (let i = 0; i < productos.length; i++) {
+        const plato = menu.find((p) => p.id === productos[i].id);
+        if (!plato) {
               return res.status(400).json('El id del plato no es válido');
-            }
+          }
           }
       
       
-          connection.query(
-            'INSERT INTO pedidos (id_usuario, fecha) VALUES (?, ?)',
-            [1, new Date()],
+        connection.query(
+            'INSERT INTO pedidos (id_usuario, fecha,estado) VALUES (?, ?,?)',
+            [1, new Date(),"pendiente"],
             (err, response) => {
               if (err) {
                 console.error(err);
@@ -138,9 +138,81 @@ app.post('/pedido', (req, res) => {
           );
         });
       });
+   //Crear un endpoint que permita obtener todos los pedidos de un usuario (GET /pedidos/:id).
+   
+app.get("/pedidos/:id", (req, res) => {
+    const id = req.params.id;
+    connection.query("SELECT pedidos.*, platos.*, pedidos_platos.id_pedido, pedidos_platos.cantidad FROM pedidos INNER JOIN pedidos_platos ON pedidos.id = pedidos_platos.id_pedido INNER JOIN platos ON pedidos_platos.id_plato=platos.id WHERE pedidos.id_usuario=?", id, (err, result) => {
+    if (err) {
+      return res.status(500).json(err);
+    }
+    if(result.length === 0 || !result) {
+      return res.status(404).json({ error: 'Pedido no encontrado' });
+     }
+     else {
+     let pedidos = [];
+     result.forEach((row) => {
+     if (!pedidos.find((p) => p.id === row.id_pedido)){
+      pedidos.push({
+      "id": row.id_pedido,
+      "fecha": row.fecha,
+      "estado": row.estado,
+       "id_usuario": row.id_usuario,
+        "platos": [
+         {
+            "id": row.id,
+            "nombre": row.nombre,
+            "precio": row.precio,
+            "cantidad": row.cantidad
+                            }
+                        ]
+                    })
+      } else {
+       const agregarPedido = pedidos.find((p) => p.id === row.id_pedido);
+        agregarPedido.platos.push({
+           "id": row.id,
+           "nombre": row.nombre,
+            "precio": row.precio,
+              "cantidad": row.cantidad});
+                    pedidos = pedidos.filter((p) => p.id !== row.id_pedido);
+                    pedidos.push(agregarPedido);
+                }
+            });
+            res.json(pedidos);
+        }
+    });
+});
+
+
+app.post
+
+    ("usuarios", (req, res) => {
       
 
-//Probar todos los endpoints creados utilizando REST Client.
+
+
+
+
+
+
+    });
+
+
+
+      
+      
+      
+   
+  
+
+
+  
+  
+
+
+        
+          
+
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
