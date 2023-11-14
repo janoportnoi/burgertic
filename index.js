@@ -4,7 +4,7 @@ const mysql = require('mysql2');
 const app = express();
 app.use(express.json());
 const PORT = 9000;
-const bycrypt = require('bcrypt');  
+const bcrypt = require('bcrypt');  
 
 
 const connection = mysql.createConnection({
@@ -82,7 +82,8 @@ app.get('/postres', (_, res) => {
 
 app.post('/pedido', (req, res) => {
   const { productos } = req.body;
-      
+  const { idusuario } = req.headers.authorization;
+
   if (!Array.isArray(productos) || productos.length === 0) {
      return res.status(400).json('La solicitud debe incluir un array de platos o al menos un plato');
     }
@@ -109,7 +110,7 @@ app.post('/pedido', (req, res) => {
       
         connection.query(
             'INSERT INTO pedidos (id_usuario, fecha,estado) VALUES (?, ?,?)',
-            [1, new Date(),"pendiente"],
+            [idusuario, new Date(),"pendiente"],
             (err, response) => {
               if (err) {
                 console.error(err);
@@ -183,19 +184,69 @@ app.get("/pedidos/:id", (req, res) => {
     });
 });
 
+//Crear un endpoint que permita registrar un usuario (POST /usuarios).
+app.post("/usuarios", (req, res) => {
+  const {nombre, apellido, email, password} = req.body;
+  if (!nombre || !apellido || !email || !password) {
+    return res.status(400).json("Faltan datos obligatorios");
+  }
 
-app.post
+  try{
+    const hashedPassword = bcrypt.hashSync(password, 10);
 
-    ("usuarios", (req, res) => {
-      
+    connection.query("SELECT * FROM usuarios WHERE email = ?", email, (err, result) => {
+      if (err) {
+        return res.status(500).json(err);
+      }
+      if (result.length > 0) {
+        return res.status(409).json("El usuario ya existe");
+      }
+      const insertQuery = "INSERT INTO usuarios(nombre,apellido,email,password) VALUES (?,?,?,?)";
+      connection.query(insertQuery, [nombre, apellido, email, hashedPassword], (err,result) => {
+      if(err){
+        return res.status(500).json("No se pudo insertar correctamente", err); 
+      }
+      const userId = result.insertId;
+      return res.status(201).json({id: userId});
+        
+        
+      });
+  });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json(error);
+  }
+});
+
+app.post("/login", (req, res) => {
+const { email, password } = req.body;
+if (!email || !password) {
+  return res.status(400).json("Faltan datos obligatorios");
+}
+connection.query("SELECT * FROM usuarios WHERE email = ?", email, (err, result) => {
+  if (err) {
+    return res.status(500).json(err);
+  }
+  if(result.length === 0 || !result) {
+    return res.status(401).json({ error: 'Usuario no encontrado' });
+   }
+  const usuario = result[0];
+  if (!bcrypt.compareSync(password, usuario.password)) {
+    return res.status(401).json("Usuario o contraseña incorrectos");
+  }
+  return res.status(200).json({ 
+  id: usuario.ID,
+  nombre: usuario.nombre,
+  apellido: usuario.apellido,
+  email: usuario.email, 
+
+  });
+});
+});
 
 
 
 
-
-
-
-    });
 
 
 
