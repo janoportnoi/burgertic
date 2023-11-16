@@ -82,11 +82,25 @@ app.get('/postres', (_, res) => {
 
 app.post('/pedido', (req, res) => {
   const { productos } = req.body;
-  const { idusuario } = req.headers.authorization;
-
+  const  idusuario  = req.headers.authorization;
+  if (!idusuario) {
+    return res.status(401).json({ msg: 'Unauthorized: Missing Authorization header' });
+  }
   if (!Array.isArray(productos) || productos.length === 0) {
      return res.status(400).json('La solicitud debe incluir un array de platos o al menos un plato');
     }
+    connection.query('SELECT id FROM usuarios WHERE id = ?', [idusuario], (err, userRows) => {
+      if (err) {
+        console.error('Error verificando el usuario: ' + err);
+        return res.status(500).json({
+          msg: 'Error al verificar la existencia del usuario en la base de datos',
+        });
+      }
+  
+      if (userRows.length === 0) {
+        return res.status(404).json({ msg: 'El usuario no existe en la base de datos' });
+      }
+  
     connection.query('SELECT * FROM platos', (err, rows) => {
       if (err) {
         console.error('Error consultando: ' + err);
@@ -139,10 +153,12 @@ app.post('/pedido', (req, res) => {
           );
         });
       });
+    });
    //Crear un endpoint que permita obtener todos los pedidos de un usuario (GET /pedidos/:id).
    
-app.get("/pedidos/:id", (req, res) => {
-    const id = req.params.id;
+app.get("/pedidos", (req, res) => {
+    const id = req.headers.authorization;
+
     connection.query("SELECT pedidos.*, platos.*, pedidos_platos.id_pedido, pedidos_platos.cantidad FROM pedidos INNER JOIN pedidos_platos ON pedidos.id = pedidos_platos.id_pedido INNER JOIN platos ON pedidos_platos.id_plato=platos.id WHERE pedidos.id_usuario=?", id, (err, result) => {
     if (err) {
       return res.status(500).json(err);

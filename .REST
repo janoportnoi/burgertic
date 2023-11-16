@@ -16,7 +16,7 @@ GET http://localhost:9000/pedidos/1
 
 POST http://localhost:9000/pedido HTTP/1.1
 Content-Type: application/json
-Authorization: 3
+Authorization: 5
 
 {
     "productos": [
@@ -25,13 +25,15 @@ Authorization: 3
             "cantidad": 8
         },
         {
-            "id": 7,
-            "cantidad": 5
+            "id": 14,
+            "cantidad": 2
         }
+        
     ]
 }
 ###
-GET http://localhost:9000/pedidos/1
+GET http://localhost:9000/pedidos
+Authorization: 4
 ###
 POST  http://localhost:9000/usuarios HTTP/1.1
 Content-Type: application/json
